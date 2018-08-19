@@ -1,14 +1,12 @@
 package shop.dev.service;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User.UserBuilder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -29,29 +27,35 @@ public class UserServiceImpl implements UserDetailsService{
 	
 	
 	BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+	@SuppressWarnings("null")
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		User user = userRepository.findByUserName(username);
-		
-		if(user == null) {
+		UserBuilder builder = null;
+		if (user == null) {
 			throw new UsernameNotFoundException("user name not found!");
 		}
-		
-		 Set<GrantedAuthority> grantedAuthorities = new HashSet<>();
-	        Set<Role> roles = user.getUserRole();
-	        for (Role role : roles) {
-	            grantedAuthorities.add(new SimpleGrantedAuthority(role.getRoleName()));
-	        }
-	  
-	        return new org.springframework.security.core.userdetails.User(
-	                user.getEmail(), user.getPassword(), grantedAuthorities);
+
+		try {
+			List<String> roles = new ArrayList<>();
+			for(Role role: user.getRoles()) {
+				roles.add(role.getRoleName());
+			}
+			builder.username(user.getUserName());
+			builder.password(user.getPassword());
+			builder.roles((String[]) roles.toArray());
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return builder.build();
 	}
 
 	@Transactional
 	public Result registerNewUser(UserDTO userDTO) throws Exception {
 		Result result = new Result();
 		User user = new User();
-		
 		try {
 			user.setUserName(userDTO.getUserName());
 			user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
