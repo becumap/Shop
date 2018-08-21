@@ -1,7 +1,7 @@
 package shop.dev.repository;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -15,7 +15,7 @@ import javax.persistence.Table;
 
 @Entity
 @Table(name = "role")
-public class Role {
+public class RoleEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -30,7 +30,7 @@ public class Role {
 	                CascadeType.MERGE
 	            },
 	            mappedBy = "roles")
-	    private Set<User> users = new HashSet<>();
+	    private List<UserEntity> users = new ArrayList<>();
 	
 	public String getRoleName() {
 		return roleName;
@@ -40,11 +40,6 @@ public class Role {
 		this.roleName = roleName;
 	}	
 
-	public Role(String roleName) {
-		super();
-		this.roleName = roleName;
-	}
-
 	public Long getId() {
 		return id;
 	}
@@ -53,11 +48,12 @@ public class Role {
 		this.id = id;
 	}
 
-	public Set<User> getUsers() {
+	public List<UserEntity> getUsers() {
 		return users;
 	}
 
-	public void setUsers(Set<User> users) {
+	public void setUsers(List<UserEntity> users) {
 		this.users = users;
-	}	
+	}
+
 }

@@ -1,7 +1,9 @@
 package shop.dev.service;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.transaction.Transactional;
 
@@ -14,9 +16,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import shop.dev.common.Result;
+import shop.dev.constant.CodeConstant;
 import shop.dev.dto.UserDTO;
-import shop.dev.repository.Role;
-import shop.dev.repository.User;
+import shop.dev.repository.RoleEntity;
+import shop.dev.repository.RoleRepository;
+import shop.dev.repository.UserEntity;
 import shop.dev.repository.UserRepository;
 
 @Service
@@ -25,25 +29,32 @@ public class UserServiceImpl implements UserDetailsService{
 	@Autowired
 	UserRepository userRepository;
 	
+	@Autowired
+	RoleRepository roleRepository;
 	
 	BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-	@SuppressWarnings("null")
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		User user = userRepository.findByUserName(username);
+		UserEntity user = userRepository.findByUserName(username);
 		UserBuilder builder = null;
 		if (user == null) {
 			throw new UsernameNotFoundException("user name not found!");
 		}
 
 		try {
-			List<String> roles = new ArrayList<>();
-			for(Role role: user.getRoles()) {
-				roles.add(role.getRoleName());
+			List<Object[]> roleData = roleRepository.getRoleByUser(user.getId());
+			List<String> roleList = new ArrayList<>();
+			for(Object data : roleData) {
+				BigInteger id = (BigInteger) data;
+				RoleEntity role = roleRepository.findOne(id.longValue());
+				roleList.add(role.getRoleName());
 			}
-			builder.username(user.getUserName());
+			String[] roleArray = new String[roleList.size()];
+			roleArray = roleList.toArray(roleArray);
+			
+			builder = org.springframework.security.core.userdetails.User.withUsername(username);
 			builder.password(user.getPassword());
-			builder.roles((String[]) roles.toArray());
+			builder.roles(roleArray);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -55,12 +66,19 @@ public class UserServiceImpl implements UserDetailsService{
 	@Transactional
 	public Result registerNewUser(UserDTO userDTO) throws Exception {
 		Result result = new Result();
-		User user = new User();
+		UserEntity user = new UserEntity();
+				
 		try {
+			RoleEntity role = roleRepository.findOne(2L);
+			List<RoleEntity> roles = new ArrayList<>();
+			roles.add(role);
+			
 			user.setUserName(userDTO.getUserName());
 			user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 			user.setEmail(userDTO.getEmail());
+			user.setRoles(roles);			
 			userRepository.save(user);
+			
 			result.setData(user);
 			result.setCode("000");
 			result.setMessage("SUCCESS");
@@ -75,9 +93,20 @@ public class UserServiceImpl implements UserDetailsService{
 
 	public Result getAll() {
 		Result result = new Result();
-		List<User> rawData =  userRepository.findAll();
 		
-		result.setData(rawData);
+	//	Map<Object,Object> role = roleRepository.getRoleByRoleName("ADMIN");
+		try {
+			List<UserEntity> rawData  = new ArrayList<>();
+			rawData =  userRepository.findAll();
+			result.setData(rawData);
+			result.setCode(CodeConstant.CODESUCCESS);
+			result.setMessage(CodeConstant.SUCCESS);
+		}catch (Exception e) {
+			e.printStackTrace();
+			result.setCode(CodeConstant.CODEFAIL);
+			result.setMessage(CodeConstant.FAIL);
+		}
+			
 		return result;
 		
 	}
@@ -85,7 +114,7 @@ public class UserServiceImpl implements UserDetailsService{
 	@Transactional
 	public Result updateUser(UserDTO userDTO) throws Exception{
 		Result result = new Result();
-		User user = userRepository.findOne(userDTO.getId());
+		UserEntity user = userRepository.findOne(userDTO.getId());
 		
 		try {
 			user.setUserName(userDTO.getUserName());

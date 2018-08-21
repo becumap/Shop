@@ -1,6 +1,7 @@
 package shop.dev.repository;
 
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -18,7 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "user")
-public class User {
+public class UserEntity {
 
 	@Id()
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -33,10 +34,11 @@ public class User {
 	@Column(name = "email", unique = true, nullable = false)
 	private String email;
 
+	@JsonIgnore
 	@ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
 	@JoinTable(name = "user_role", joinColumns = { @JoinColumn(name = "user_id") }, inverseJoinColumns = {
 			@JoinColumn(name = "role_id") })
-	private Set<Role> roles;
+	private List<RoleEntity> roles = new ArrayList<>();
 
 	public String getUserName() {
 		return userName;
@@ -71,11 +73,11 @@ public class User {
 		this.id = id;
 	}
 
-	public Set<Role> getRoles() {
+	public List<RoleEntity> getRoles() {
 		return roles;
 	}
 
-	public void setRoles(Set<Role> roles) {
+	public void setRoles(List<RoleEntity> roles) {
 		this.roles = roles;
 	}
 
